@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Cadastro GTA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/questionario/static/style.css?v=2.1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/inputmask@5.0.8/dist/inputmask.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="/questionario/static/script.js?v=2.14" defer></script>
+</head>
+
+<body>
+    <h1>Cadastro Socioeconômico</h1>
+    <button id="logout-button" class="button btn-secondary" style="display: none;">Sair</button>
+    <a href="/portal" class="button btn-secondary" id="back-portal-button" style="margin-left: 10px;"><i
+            class="fas fa-arrow-left"></i> Voltar ao Portal</a>
+
+    <div id="global-feedback"></div>
+
+    <div class="main-container">
+        <div id="tabs">
+            <button class="tab-button active" data-tab-name="dashboard">Dashboard</button>
+            <button class="tab-button" data-tab-name="estatisticas">Estatísticas</button>
+            <button class="tab-button d-none" data-tab-name="user-management">Gerenciar Usuários</button>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div id="dashboard-content" class="tab-content active">
+            <h2>Dashboard de Cadastros</h2>
+            <div id="dashboard-controls">
+                <input type="text" id="search-input" placeholder="Pesquisar por ID, nome, projeto ou núcleo...">
+                <button type="button" id="novo-cadastro-button" class="button btn-primary">
+                    <i class="fas fa-plus"></i> Novo Cadastro
+                </button>
+            </div>
+            <div id="dashboard-pager" style="display:flex;gap:8px;align-items:center;margin:10px 0;">
+                <button type="button" id="dashboard-prev" class="button btn-secondary">Anterior</button>
+                <span id="dashboard-page-indicator">Página 1</span>
+                <button type="button" id="dashboard-next" class="button btn-secondary">Próxima</button>
+            </div>
+            <ul id="lista-cadastros" class="lista-cadastros"></ul>
+        </div>
+
+        <!-- User Management Content (Admin only) -->
+        <div id="user-management-content" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Gerenciamento de Usuários</h2>
+                <button class="button btn-primary" data-action="add-user">
+                    <i class="fas fa-user-plus"></i> Adicionar Usuário
+                </button>
+            </div>
+            <ul id="user-list" class="lista-cadastros"></ul>
+        </div>
+
+        <!-- Cadastro Form Content -->
+        <div id="cadastro-content" class="tab-content">
+            <form id="form-section-1" class="form-section">
+                <h2>1. Identificadores do Cadastro</h2>
+                <label for="numeroCadastro">Número do cadastro:</label>
+                <input type="text" id="numeroCadastro" name="numeroCadastro" readonly required><br><br>
+                <label for="projeto">Projeto:</label>
+                <input type="text" id="projeto" name="projeto" value="COPA DO POVO"><br><br>
+
+                <label for="nucleo">Núcleo:</label>
+                <select id="nucleo" name="nucleo" required>
+                    <option value="">Selecione o Núcleo</option>
+                    <option value="SÃO MATEUS">SÃO MATEUS</option>
+                    <option value="AE CARVALHO">AE CARVALHO</option>
+                    <option value="CARMOZINA">CARMOZINA</option>
+                    <option value="CIDADE LIDER">CIDADE LIDER</option>
+                    <option value="CIDADE TIRADENTES">CIDADE TIRADENTES</option>
+                    <option value="ESTAIADINHA">ESTAIADINHA</option>
+                    <option value="GLEBA DO PESSEGO">GLEBA DO PESSEGO</option>
+                    <option value="GUAIANAZES">GUAIANAZES</option>
+                    <option value="ITAQUERA">ITAQUERA</option>
+                    <option value="JARDIM HELIAN">JARDIM HELIAN</option>
+                    <option value="SAO MIGUEL">SAO MIGUEL</option>
+                </select><br><br>
+
+                <button type="button" class="save-section-button button btn-secondary">Salvar Seção</button>
+                <input type="hidden" id="cadastroId" name="cadastroId">
+            </form>
+
+            <form id="form-section-2" class="form-section">
+                <h2>2. Dados da Visita</h2>
+                <label for="cadastrador">Cadastrador:</label>
+                <input type="text" id="cadastrador" name="cadastrador" readonly><br><br>
+                <label for="dataVisita">Data da Visita:</label>
+                <input type="date" id="dataVisita" name="dataVisita" required><br><br>
+                <label for="horaVisita">Hora da Visita:</label>
+                <input type="time" id="horaVisita" name="horaVisita" required><br><br>
+                <label for="situacao">Situação:</label>
+                <select id="situacao" name="situacao" required>
+                    <option value="">Selecione</option>
+                    <option value="OK">OK</option>
+                    <option value="PENDENTE">PENDENTE</option>
+                </select><br><br>
+                <label for="entrevistado_visita">Entrevistado:</label>
+                <select id="entrevistado_visita" name="entrevistado_visita" required>
+                    <option value="">Selecione</option>
+                    <option value="PrimeiroResponsavel">Primeiro Responsável</option>
+                    <option value="SegundoResponsavel">Segundo Responsável</option>
+                </select><br><br>
+                <button type="button" class="save-section-button button btn-secondary">Salvar Seção</button>
+            </form>
+
+            <form id="form-section-3" class="form-section">
+                <h2>3. Dados de Controle</h2>
+                <label for="entrevistado">Entrevistado:</label>
+                <select id="entrevistado" name="entrevistado" required>
+                    <option value="">Selecione</option>
+                    <option value="PrimeiroResponsavel">Primeiro Responsável</option>
+                    <option value="SegundoResponsavel">Segundo Responsável</option>
+                </select><br><br>
+                <label for="trabalhaResponsavel1">1º Responsável trabalha de final de semana:</label>
+                <select id="trabalhaResponsavel1" name="trabalhaResponsavel1" required>
+                    <option value="">Selecione</option>
+                    <option value="Sábado">Sábado</option>
+                    <option value="Domingo">Domingo</option>
+                    <option value="SábadoDomingo">Sábado e Domingo</option>
+                    <option value="Não se aplica">Não se aplica</option>
+                </select><br><br>
+                <label for="trabalhaResponsavel2">2º Responsável trabalha:</label>
+                <select id="trabalhaResponsavel2" name="trabalhaResponsavel2" required>
+                    <option value="">Selecione</option>
+                    <option value="Sábado">Sábado</option>
+                    <option value="Domingo">Domingo</option>
+                    <option value="Sábado e Domingo">Sábado e Domingo</option>
+                    <option value="Não se aplica">Não se aplica</option>
+                </select><br><br>
+                <label for="cep">CEP:</label>
+                <input type="text" id="cep" name="cep" required><br><br>
+                <label for="endereco">Endereço:</label>
+                <input type="text" id="endereco" name="endereco" required><br><br>
+                <label for="numero">Número:</label>
+                <input type="text" id="numero" name="numero" required><br><br>
+                <label for="complemento">Complemento:</label>
+                <input type="text" id="complemento" name="complemento"><br><br>
+                <label for="cidade">Cidade:</label>
+                <input type="text" id="cidade" name="cidade" required><br><br>
+                <label for="uf">UF:</label>
+                <select id="uf" name="uf" class="uf-select" required>
+                    <option value="">Selecione o Estado</option>
+                </select><br><br>
+                <button type="button" class="save-section-button button btn-secondary">Salvar Seção</button>
+            </form>
+
+            <form id="form-section-4" class="form-section">
+                <h2>4. Dados dos Responsáveis</h2>
+
+                <label for="numeroResponsaveis">Número de Responsáveis:</label>
+                <select id="numeroResponsaveis" name="numeroResponsaveis">
+                    <option value="1">1 Responsável</option>
+                    <option value="2">2 Responsáveis</option>
+                </select><br><br>
+
+                <div id="responsavel1-container">
+                    <h3>Primeiro Responsável</h3>
+                    <label for="nomeResponsavel1">Nome completo:</label>
+                    <input type="text" id="nomeResponsavel1" name="nomeResponsavel1" required><br><br>
+                    <label for="naturalidadeResponsavel1">Cidade:</label>
+                    <input type="text" id="naturalidadeResponsavel1" name="naturalidadeResponsavel1" required><br><br>
+                    <label for="ufResponsavel1">UF:</label>
+                    <select id="ufResponsavel1" name="ufResponsavel1" class="uf-select" required>
+                        <option value="">Selecione o Estado</option>
+                    </select><br><br>
+                    <label for="paisResponsavel1">País:</label>
+                    <select id="paisResponsavel1" name="paisResponsavel1" required>
+                        <option value="">Selecione</option>
+                        <option value="Brasil">Brasil</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                    <label for="outroPaisResponsavel1">Especifique outro país:</label>
+                    <input type="text" id="outroPaisResponsavel1" name="outroPaisResponsavel1" disabled><br><br>
+                    <label for="dataNascimentoResponsavel1">Data de nascimento:</label>
+                    <input type="date" id="dataNascimentoResponsavel1" name="dataNascimentoResponsavel1"
+                        required><br><br>
+                    <label for="rgResponsavel1">RG:</label>
+                    <input type="text" id="rgResponsavel1" name="rgResponsavel1" required><br><br>
+                    <label for="dataExpedicaoResponsavel1">Data de expedição:</label>
+                    <input type="date" id="dataExpedicaoResponsavel1" name="dataExpedicaoResponsavel1" required><br><br>
+                    <label for="orgaoExpedidorResponsavel1">Orgão expedidor:</label>
+                    <input type="text" id="orgaoExpedidorResponsavel1" name="orgaoExpedidorResponsavel1"
+                        required><br><br>
+
+                    <label for="cpfResponsavel1">CPF:</label>
+                    <input type="text" id="cpfResponsavel1" name="cpfResponsavel1" required>
+                    <span id="cpfResponsavel1-error" class="field-error-message"></span><br><br>
+
+                    <label for="nisResponsavel1">NIS:</label>
+                    <input type="text" id="nisResponsavel1" name="nisResponsavel1"><br><br>
+
+                    <label for="tipoRendaResponsavel1">Tipo de renda:</label>
+                    <select id="tipoRendaResponsavel1" name="tipoRendaResponsavel1" required>
+                        <option value="">Selecione</option>
+                        <option value="RENDA COMPROVADA">RENDA COMPROVADA</option>
+                        <option value="RENDA DECLARADA">RENDA DECLARADA</option>
+                        <option value="SEM RENDA">SEM RENDA</option>
+                    </select><br><br>
+
+                    <div id="renda-comprovada-fields-1" class="income-fields" style="display: none;">
+                        <h4>Renda Comprovada</h4>
+                        <label for="cnpjCpfFontePagadoraResponsavel1">CNPJ/CPF da Fonte Pagadora:</label>
+                        <input type="text" id="cnpjCpfFontePagadoraResponsavel1"
+                            name="cnpjCpfFontePagadoraResponsavel1">
+                        <span id="cnpjCpfFontePagadoraResponsavel1-error" class="field-error-message"></span><br><br>
+                        <label for="dataAdmissaoResponsavel1">Data de admissão:</label>
+                        <input type="date" id="dataAdmissaoResponsavel1" name="dataAdmissaoResponsavel1"><br><br>
+                        <label for="valorRendaBrutaResponsavel1">Valor da renda bruta:</label>
+                        <input type="text" class="monetary-input" id="valorRendaBrutaResponsavel1"
+                            name="valorRendaBrutaResponsavel1"><br><br>
+                        <label for="valorRendaLiquidaResponsavel1">Valor da renda líquida:</label>
+                        <input type="text" class="monetary-input" id="valorRendaLiquidaResponsavel1"
+                            name="valorRendaLiquidaResponsavel1"><br><br>
+                        <label for="mesReferenciaRendaResponsavel1">Mês de referência da renda:</label>
+                        <select id="mesReferenciaRendaResponsavel1" name="mesReferenciaRendaResponsavel1">
+                            <option value="">Selecione</option>
+                            <option value="Janeiro">Janeiro</option>
+                            <option value="Fevereiro">Fevereiro</option>
+                            <option value="Março">Março</option>
+                            <option value="Abril">Abril</option>
+                            <option value="Maio">Maio</option>
+                            <option value="Junho">Junho</option>
+                            <option value="Julho">Julho</option>
+                            <option value="Agosto">Agosto</option>
+                            <option value="Setembro">Setembro</option>
+                            <option value="Outubro">Outubro</option>
+                            <option value="Novembro">Novembro</option>
+                            <option value="Dezembro">Dezembro</option>
+                        </select><br><br>
+                    </div>
+
+                    <div id="renda-declarada-fields-1" class="income-fields" style="display: none;">
+                        <h4>Renda Declarada</h4>
+                        <label for="rendaDeclaradaResponsavel1">Renda Declarada:</label>
+                        <input type="text" id="rendaDeclaradaResponsavel1" name="rendaDeclaradaResponsavel1"><br><br>
+                        <label for="dataInicioRendaDeclaradaResponsavel1">Data início da renda declarada:</label>
+                        <input type="date" id="dataInicioRendaDeclaradaResponsavel1"
+                            name="dataInicioRendaDeclaradaResponsavel1"><br><br>
+                        <label for="valorRendaDeclaradaLiquidaResponsavel1">Valor da renda declarada líquida:</label>
+                        <input type="text" class="monetary-input" id="valorRendaDeclaradaLiquidaResponsavel1"
+                            name="valorRendaDeclaradaLiquidaResponsavel1"><br><br>
+                        <label for="mesReferenciaRendaDeclaradaResponsavel1">Mês de referência da renda
+                            declarada:</label>
+                        <select id="mesReferenciaRendaDeclaradaResponsavel1"
+                            name="mesReferenciaRendaDeclaradaResponsavel1">
+                            <option value="">Selecione</option>
+                            <option value="Janeiro">Janeiro</option>
+                            <option value="Fevereiro">Fevereiro</option>
+                            <option value="Março">Março</option>
+                            <option value="Abril">Abril</option>
+                            <option value="Maio">Maio</option>
+                            <option value="Junho">Junho</option>
+                            <option value="Julho">Julho</option>
+                            <option value="Agosto">Agosto</option>
+                            <option value="Setembro">Setembro</option>
+                            <option value="Outubro">Outubro</option>
+                            <option value="Novembro">Novembro</option>
+                            <option value="Dezembro">Dezembro</option>
+                        </select><br><br>
+                    </div>
+
+                    <label for="recebeBpcResponsavel1">Recebe BPC?</label>
+                    <select id="recebeBpcResponsavel1" name="recebeBpcResponsavel1" required>
+                        <option value="">Selecione</option>
+                        <option value="Sim">Sim</option>
+                        <option value="Não">Não</option>
+                    </select><br><br>
+                    <label for="bolsaFamiliaResponsavel1">Participa do Bolsa Família?</label>
+                    <select id="bolsaFamiliaResponsavel1" name="bolsaFamiliaResponsavel1" required>
+                        <option value="">Selecione</option>
+                        <option value="Sim">Sim</option>
+                        <option value="Não">Não</option>
+                    </select><br><br>
+
+                    <label for="preencherSeMenor18Responsavel1">Preencher se menor de 18 anos:</label>
+                    <select id="preencherSeMenor18Responsavel1" name="preencherSeMenor18Responsavel1" required>
+                        <option value="">Selecione</option>
+                        <option value="Sim">Sim</option>
+                        <option value="Não" selected>Não</option>
+                    </select><br><br>
+                    <div id="tutor-fields-1" style="display: none;">
+                        <h4>Dados do Tutor (se menor de 18 anos)</h4>
+                        <label for="nomeTutorResponsavel1">Nome do Tutor:</label>
+                        <input type="text" id="nomeTutorResponsavel1" name="nomeTutorResponsavel1"><br><br>
+                        <label for="cpfTutorResponsavel1">CPF do tutor:</label>
+                        <input type="text" id="cpfTutorResponsavel1" name="cpfTutorResponsavel1">
+                        <span id="cpfTutorResponsavel1-error" class="field-error-message"></span><br><br>
+                    </div>
+
+                    <label for="tipoContato1Responsavel1">Tipo do contato 1:</label>
+                    <input type="text" id="tipoContato1Responsavel1" name="tipoContato1Responsavel1"><br><br>
+                    <label for="contato1Responsavel1">Contato 1:</label>
+                    <input type="text" id="contato1Responsavel1" name="contato1Responsavel1"><br><br>
+                    <label for="tipoContato2Responsavel1">Tipo do contato 2:</label>
+                    <input type="text" id="tipoContato2Responsavel1" name="tipoContato2Responsavel1"><br><br>
+                    <label for="contato2Responsavel1">Contato 2:</label>
+                    <input type="text" id="contato2Responsavel1" name="contato2Responsavel1"><br><br>
+                </div>
+
+                <hr>
+                <div id="responsavel2-container" style="display: none;">
+                    <h3>Segundo Responsável</h3>
+                    <label for="nomeResponsavel2">Nome completo:</label>
+                    <input type="text" id="nomeResponsavel2" name="nomeResponsavel2"><br><br>
+                    <label for="naturalidadeResponsavel2">Cidade:</label>
+                    <input type="text" id="naturalidadeResponsavel2" name="naturalidadeResponsavel2"><br><br>
+                    <label for="ufResponsavel2">UF:</label>
+                    <select id="ufResponsavel2" name="ufResponsavel2" class="uf-select">
+                        <option value="">Selecione o Estado</option>
+                    </select><br><br>
+                    <label for="paisResponsavel2">País:</label>
+                    <select id="paisResponsavel2" name="paisResponsavel2">
+                        <option value="">Selecione</option>
+                        <option value="Brasil">Brasil</option>
+                        <option value="Outro">Outro</option>
+                    </select><br><br>
+                    <label for="outroPaisResponsavel2">Especifique outro país:</label>
+                    <input type="text" id="outroPaisResponsavel2" name="outroPaisResponsavel2" disabled><br><br>
+                    <label for="dataNascimentoResponsavel2">Data de nascimento:</label>
+                    <input type="date" id="dataNascimentoResponsavel2" name="dataNascimentoResponsavel2"><br><br>
+                    <label for="rgResponsavel2">RG:</label>
+                    <input type="text" id="rgResponsavel2" name="rgResponsavel2"><br><br>
+                    <label for="dataExpedicaoResponsavel2">Data de expedição:</label>
+                    <input type="date" id="dataExpedicaoResponsavel2" name="dataExpedicaoResponsavel2"><br><br>
+                    <label for="orgaoExpedidorResponsavel2">Orgão expedidor:</label>
+                    <input type="text" id="orgaoExpedidorResponsavel2" name="orgaoExpedidorResponsavel2"><br><br>
+
+                    <label for="cpfResponsavel2">CPF:</label>
+                    <input type="text" id="cpfResponsavel2" name="cpfResponsavel2">
+                    <span id="cpfResponsavel2-error" class="field-error-message"></span><br><br>
+
+                    <label for="nisResponsavel2">NIS:</label>
+                    <input type="text" id="nisResponsavel2" name="nisResponsavel2"><br><br>
+                    <label for="tipoRendaResponsavel2">Tipo de renda:</label>
+                    <select id="tipoRendaResponsavel2" name="tipoRendaResponsavel2">
+                        <option value="">Selecione</option>
+                        <option value="RENDA COMPROVADA">RENDA COMPROVADA</option>
+                        <option value="RENDA DECLARADA">RENDA DECLARADA</option>
+                        <option value="SEM RENDA">SEM RENDA</option>
+                    </select><br><br>
+
+                    <div id="renda-comprovada-fields-2" class="income-fields" style="display: none;">
+                        <h4>Renda Comprovada</h4>
+                        <label for="cnpjCpfFontePagadoraResponsavel2">CNPJ/CPF da Fonte Pagadora:</label>
+                        <input type="text" id="cnpjCpfFontePagadoraResponsavel2"
+                            name="cnpjCpfFontePagadoraResponsavel2">
+                        <span id="cnpjCpfFontePagadoraResponsavel2-error" class="field-error-message"></span><br><br>
+                        <label for="dataAdmissaoResponsavel2">Data de admissão:</label>
+                        <input type="date" id="dataAdmissaoResponsavel2" name="dataAdmissaoResponsavel2"><br><br>
+                        <label for="valorRendaBrutaResponsavel2">Valor da renda bruta:</label>
+                        <input type="text" class="monetary-input" id="valorRendaBrutaResponsavel2"
+                            name="valorRendaBrutaResponsavel2"><br><br>
+                        <label for="valorRendaLiquidaResponsavel2">Valor da renda líquida:</label>
+                        <input type="text" class="monetary-input" id="valorRendaLiquidaResponsavel2"
+                            name="valorRendaLiquidaResponsavel2"><br><br>
+                        <label for="mesReferenciaRendaResponsavel2">Mês de referência da renda:</label>
+                        <select id="mesReferenciaRendaResponsavel2" name="mesReferenciaRendaResponsavel2">
+                            <option value="">Selecione</option>
+                            <option value="Janeiro">Janeiro</option>
+                            <option value="Fevereiro">Fevereiro</option>
+                            <option value="Março">Março</option>
+                            <option value="Abril">Abril</option>
+                            <option value="Maio">Maio</option>
+                            <option value="Junho">Junho</option>
+                            <option value="Julho">Julho</option>
+                            <option value="Agosto">Agosto</option>
+                            <option value="Setembro">Setembro</option>
+                            <option value="Outubro">Outubro</option>
+                            <option value="Novembro">Novembro</option>
+                            <option value="Dezembro">Dezembro</option>
+                        </select><br><br>
+                    </div>
+
+                    <div id="renda-declarada-fields-2" class="income-fields" style="display: none;">
+                        <h4>Renda Declarada</h4>
+                        <label for="dataInicioRendaDeclaradaResponsavel2">Data início da renda declarada:</label>
+                        <input type="date" id="dataInicioRendaDeclaradaResponsavel2"
+                            name="dataInicioRendaDeclaradaResponsavel2"><br><br>
+                        <label for="valorRendaDeclaradaLiquidaResponsavel2">Valor da renda declarada líquida:</label>
+                        <input type="text" class="monetary-input" id="valorRendaDeclaradaLiquidaResponsavel2"
+                            name="valorRendaDeclaradaLiquidaResponsavel2"><br><br>
+                        <label for="mesReferenciaRendaDeclaradaResponsavel2">Mês de referência da renda
+                            declarada:</label>
+                        <select id="mesReferenciaRendaDeclaradaResponsavel2"
+                            name="mesReferenciaRendaDeclaradaResponsavel2">
+                            <option value="">Selecione</option>
+                            <option value="Janeiro">Janeiro</option>
+                            <option value="Fevereiro">Fevereiro</option>
+                            <option value="Março">Março</option>
+                            <option value="Abril">Abril</option>
+                            <option value="Maio">Maio</option>
+                            <option value="Junho">Junho</option>
+                            <option value="Julho">Julho</option>
+                            <option value="Agosto">Agosto</option>
+                            <option value="Setembro">Setembro</option>
+                            <option value="Outubro">Outubro</option>
+                            <option value="Novembro">Novembro</option>
+                            <option value="Dezembro">Dezembro</option>
+                        </select><br><br>
+                    </div>
+
+                    <label for="recebeBpcResponsavel2">Recebe BPC?</label>
+                    <select id="recebeBpcResponsavel2" name="recebeBpcResponsavel2">
+                        <option value="">Selecione</option>
+                        <option value="Sim">Sim</option>
+                        <option value="Não">Não</option>
+                    </select><br><br>
+                    <label for="bolsaFamiliaResponsavel2">Participa do Bolsa Família?</label>
+                    <select id="bolsaFamiliaResponsavel2" name="bolsaFamiliaResponsavel2">
+                        <option value="">Selecione</option>
+                        <option value="Sim">Sim</option>
+                        <option value="Não">Não</option>
+                    </select><br><br>
+
+                    <label for="preencherSeMenor18Responsavel2">Preencher se menor de 18 anos:</label>
+                    <select id="preencherSeMenor18Responsavel2" name="preencherSeMenor18Responsavel2">
+                        <option value="">Selecione</option>
+                        <option value="Sim">Sim</option>
+                        <option value="Não" selected>Não</option>
+                    </select><br><br>
+                    <div id="tutor-fields-2" style="display: none;">
+                        <h4>Dados do Tutor (se menor de 18 anos)</h4>
+                        <label for="nomeTutorResponsavel2">Nome do Tutor:</label>
+                        <input type="text" id="nomeTutorResponsavel2" name="nomeTutorResponsavel2"><br><br>
+
+                        <label for="cpfTutorResponsavel2">CPF do tutor:</label>
+                        <input type="text" id="cpfTutorResponsavel2" name="cpfTutorResponsavel2">
+                        <span id="cpfTutorResponsavel2-error" class="field-error-message"></span><br><br>
+                    </div>
+
+                    <label for="tipoContato1Responsavel2">Tipo do contato 1:</label>
+                    <input type="text" id="tipoContato1Responsavel2" name="tipoContato1Responsavel2"><br><br>
+                    <label for="contato1Responsavel2">Contato 1:</label>
+                    <input type="text" id="contato1Responsavel2" name="contato1Responsavel2"><br><br>
+                    <label for="tipoContato2Responsavel2">Tipo do contato 2:</label>
+                    <input type="text" id="tipoContato2Responsavel2" name="tipoContato2Responsavel2"><br><br>
+                    <label for="contato2Responsavel2">Contato 2:</label>
+                    <input type="text" id="contato2Responsavel2" name="contato2Responsavel2"><br><br>
+                </div>
+                <button type="button" class="save-section-button button btn-secondary">Salvar Seção</button>
+            </form>
+
+            <form id="form-section-5" class="form-section">
+                <h2>5. Composição Familiar</h2>
+                <div id="membros-familia"></div>
+                <button type="button" id="add-membro" class="button btn-secondary">Adicionar Membro da Família</button>
+                <br>
+                <button type="button" class="save-section-button button btn-secondary">Salvar Seção</button>
+            </form>
+
+            <form id="form-section-6" class="form-section">
+                <h2>6. Despesas</h2>
+                <label for="aguaDespesas">Água:</label>
+                <input type="text" class="monetary-input" id="aguaDespesas" name="aguaDespesas" required><br><br>
+                <label for="luzDespesas">Luz:</label>
+                <input type="text" class="monetary-input" id="luzDespesas" name="luzDespesas" required><br><br>
+                <label for="aluguelSocialDespesas">Aluguel social:</label>
+                <input type="text" class="monetary-input" id="aluguelSocialDespesas"
+                    name="aluguelSocialDespesas"><br><br>
+                <label for="aluguelDespesas">Aluguel:</label>
+                <input type="text" class="monetary-input" id="aluguelDespesas" name="aluguelDespesas" required><br><br>
+                <label for="gasDespesas">Gás:</label>
+                <input type="text" class="monetary-input" id="gasDespesas" name="gasDespesas" required><br><br>
+                <label for="alimentacaoDespesas">Alimentação:</label>
+                <input type="text" class="monetary-input" id="alimentacaoDespesas" name="alimentacaoDespesas"
+                    required><br><br>
+                <label for="transporteDespesas">Transporte:</label>
+                <input type="text" class="monetary-input" id="transporteDespesas" name="transporteDespesas"
+                    required><br><br>
+                <label for="saudeRemediosDespesas">Saúde/Remédios:</label>
+                <input type="text" class="monetary-input" id="saudeRemediosDespesas" name="saudeRemediosDespesas"
+                    required><br><br>
+                <button type="button" class="save-section-button button btn-secondary">Salvar Seção</button>
+            </form>
+
+            <form id="form-section-7" class="form-section">
+                <h2>7. Lazer e Cultura</h2>
+                <label for="praticaAtividadeFisica">Pratica atividade física nos momentos livres?</label>
+                <select id="praticaAtividadeFisica" name="praticaAtividadeFisica" required>
+                    <option value="">Selecione</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                </select><br><br>
+                <label for="tipoAtividadeFisica">Qual tipo de atividade física?</label>
+                <input type="text" id="tipoAtividadeFisica" name="tipoAtividadeFisica" disabled><br><br>
+                <label for="tipoAtividadeFisica2">Qual tipo de atividade física 2?</label>
+                <input type="text" id="tipoAtividadeFisica2" name="tipoAtividadeFisica2" disabled><br><br>
+                <label for="tipoAtividadeFisica3">Qual tipo de atividade física 3?</label>
+                <input type="text" id="tipoAtividadeFisica3" name="tipoAtividadeFisica3" disabled><br><br>
+                <label for="tipoAtividadeFisica4">Qual tipo de atividade física 4?</label>
+                <input type="text" id="tipoAtividadeFisica4" name="tipoAtividadeFisica4" disabled><br><br>
+                <button type="button" class="save-section-button button btn-secondary">Salvar Seção</button>
+            </form>
+
+            <form id="form-section-8" class="form-section">
+                <h2>8. Participação e Organização Comunitária</h2>
+                <label for="movimentosLutaMoradia">Movimentos Luta Moradia:</label>
+                <select id="movimentosLutaMoradia" name="movimentosLutaMoradia">
+                    <option value="">Selecione</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                </select><br><br>
+                <label for="associacaoBairro">Associação Bairro:</label>
+                <select id="associacaoBairro" name="associacaoBairro">
+                    <option value="">Selecione</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                </select><br><br>
+                <label for="sindicatos">Sindicatos:</label>
+                <select id="sindicatos" name="sindicatos">
+                    <option value="">Selecione</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                </select><br><br>
+                <label for="entidadeRecreativa">Entidade Recreativa:</label>
+                <select id="entidadeRecreativa" name="entidadeRecreativa">
+                    <option value="">Selecione</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                </select><br><br>
+                <label for="partidosDiretoriosPoliticos">Partidos ou diretórios políticos:</label>
+                <select id="partidosDiretoriosPoliticos" name="partidosDiretoriosPoliticos">
+                    <option value="">Selecione</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                </select><br><br>
+                <label for="entidadeReligiosa">Entidade Religiosa:</label>
+                <select id="entidadeReligiosa" name="entidadeReligiosa">
+                    <option value="">Selecione</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                </select><br><br>
+                <label for="outros">Outros:</label>
+                <select id="outros" name="outros">
+                    <option value="">Selecione</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                </select><br><br>
+                <label for="outrosEspecifique">Outros Especifique:</label>
+                <input type="text" id="outrosEspecifique" name="outrosEspecifique" disabled><br><br>
+                <button type="button" class="save-section-button button btn-secondary">Salvar Seção</button>
+            </form>
+
+            <form id="form-section-9" class="form-section">
+                <h2>9. Dados Moradia</h2>
+                <label for="tipoMoradia">Qual tipo de moradia?</label>
+                <select id="tipoMoradia" name="tipoMoradia" required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - CASA</option>
+                    <option value="2">2 - APARTAMENTO</option>
+                    <option value="3">3 - CÔMODO</option>
+                    <option value="4">4 - OUTRO</option>
+                    <option value="5">5 - VIVE EM SITUAÇÃO DE RUA</option>
+                </select><br><br>
+                <label for="situacaoMoradia">Situação da moradia</label>
+                <select id="situacaoMoradia" name="situacaoMoradia" required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - PRÓPRIA(COMPRADA)</option>
+                    <option value="2">2 - ALUGADA</option>
+                    <option value="3">3 - CEDIDA EM DEFINITIVO</option>
+                    <option value="4">4 - EMPRESTADA</option>
+                    <option value="5">5 - OCUPADA</option>
+                    <option value="6">6 - PARENTES</option>
+                    <option value="7">7 - PENSÃO</option>
+                    <option value="8">8 - ALOJAMENTO</option>
+                    <option value="9">9 - OUTRO</option>
+                </select><br><br>
+                <label for="usaAluguelSocial">Usa aluguel social?</label>
+                <select id="usaAluguelSocial" name="usaAluguelSocial" required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - NÃO</option>
+                    <option value="2">2 - SIM</option>
+                    <option value="99">99 - SEM INF.</option>
+                </select><br><br>
+                <label for="exerceAtividadeEconomicaResidencia">Exerce atividade econômica na residencia?</label>
+                <select id="exerceAtividadeEconomicaResidencia" name="exerceAtividadeEconomicaResidencia" required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - NÃO</option>
+                    <option value="2">2 - SIM</option>
+                    <option value="99">99 - SEM INF.</option>
+                </select><br><br>
+                <label for="qualAtividade">Qual atividade?</label>
+                <input type="text" id="qualAtividade" name="qualAtividade" disabled><br><br>
+                <label for="agriculturaSubsistencia">A família possui agricultura de subsistência?</label>
+                <select id="agriculturaSubsistencia" name="agriculturaSubsistencia" required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - NÃO</option>
+                    <option value="2">2 - SIM</option>
+                    <option value="99">99 - SEM INF.</option>
+                </select><br><br>
+                <label for="representaAlimentacaoFamilia">Quanto ela representa na alimentação da família? (%)</label>
+                <input type="number" id="representaAlimentacaoFamilia" name="representaAlimentacaoFamilia"
+                    disabled><br><br>
+                <label for="materiaisPredominantesParede">Materiais predominantes na parede:</label>
+                <select id="materiaisPredominantesParede" name="materiaisPredominantesParede" required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - BLOCO</option>
+                    <option value="2">2 - TIJOLO</option>
+                    <option value="3">3 - TAIPA</option>
+                    <option value="4">4 - MADEIRA</option>
+                    <option value="5">5 - OUTROS</option>
+                    <option value="9">9 - SEM INF.</option>
+                </select><br><br>
+                <label for="materiaisPredominantesRevestimento">Materiais predominantes no revestimento:</label>
+                <select id="materiaisPredominantesRevestimento" name="materiaisPredominantesRevestimento" required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - SEM REVESTIMENTO</option>
+                    <option value="2">2 - COM REVESTIMENTO</option>
+                    <option value="3">3 - PINTURA</option>
+                    <option value="4">4 - CERAMICA</option>
+                    <option value="5">5 - OUTRO</option>
+                    <option value="9">9 - SEM INF.</option>
+                </select><br><br>
+                <label for="materiaisPredominantesPiso">Materiais predominantes do piso:</label>
+                <select id="materiaisPredominantesPiso" name="materiaisPredominantesPiso" required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - CHÃO BATIDO</option>
+                    <option value="2">2 - CIMENTADO</option>
+                    <option value="3">3 - CERÂMICO</option>
+                    <option value="4">4 - PEDRA</option>
+                    <option value="5">5 - OUTROS</option>
+                    <option value="9">9 - SEM INF.</option>
+                </select><br><br>
+                <label for="materiaisPredominantesCobertura">Materiais predominantes na cobertura:</label>
+                <select id="materiaisPredominantesCobertura" name="materiaisPredominantesCobertura" required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - TELHA CERAMICA</option>
+                    <option value="2">2 - TELHA METÁLICA</option>
+                    <option value="3">3 - FIBROCIMENTO</option>
+                    <option value="4">4 - LAJE</option>
+                    <option value="5">5 - OUTROS</option>
+                    <option value="9">9 - SEM INF.</option>
+                </select><br><br>
+                <label for="moraCoabitacao">Mora em coabitação?</label>
+                <select id="moraCoabitacao" name="moraCoabitacao" required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - NÃO</option>
+                    <option value="2">2 - SIM</option>
+                    <option value="99">99 - SEM INF.</option>
+                </select><br><br>
+                <label for="voluntario">Se sim é voluntário?</label>
+                <select id="voluntario" name="voluntario" disabled>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - NÃO</option>
+                    <option value="2">2 - SIM</option>
+                    <option value="99">99 - SEM INF.</option>
+                </select><br><br>
+                <label for="moradiaSituacaoRiscoCalamidade">Moradia em situação de risco ou calamidade?</label>
+                <select id="moradiaSituacaoRiscoCalamidade" name="moradiaSituacaoRiscoCalamidade" required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - NÃO</option>
+                    <option value="2">2 - SIM</option>
+                    <option value="99">99 - SEM INF.</option>
+                </select><br><br>
+                <label for="deslocamentoInvoluntarioObras">A família é oriunda de deslocamento involuntário de obras
+                    públicas federais?</label>
+                <select id="deslocamentoInvoluntarioObras" name="deslocamentoInvoluntarioObras" required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - NÃO</option>
+                    <option value="2">2 - SIM</option>
+                    <option value="99">99 - SEM INF.</option>
+                </select><br><br>
+                <label for="deslocamentoInvoluntarioObrasEspecificar">Se sim, especificar:</label>
+                <input type="text" id="deslocamentoInvoluntarioObrasEspecificar"
+                    name="deslocamentoInvoluntarioObrasEspecificar" disabled><br><br>
+                <label for="moradiaAreaRisco">Moradia em área de risco?</label>
+                <select id="moradiaAreaRisco" name="moradiaAreaRisco" required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - NÃO</option>
+                    <option value="2">2 - SIM</option>
+                    <option value="99">99 - SEM INF.</option>
+                </select><br><br>
+                <label for="viveComunidadeTradicional">Vive em comunidade tradicional?</label>
+                <select id="viveComunidadeTradicional" name="viveComunidadeTradicional" required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - NÃO</option>
+                    <option value="2">2 - SIM</option>
+                    <option value="99">99 - SEM INF.</option>
+                </select><br><br>
+                <label for="viveComunidadeQuilombola">Vive em comunidade quilombola?</label>
+                <select id="viveComunidadeQuilombola" name="viveComunidadeQuilombola" required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - NÃO</option>
+                    <option value="2">2 - SIM</option>
+                    <option value="99">99 - SEM INF.</option>
+                </select><br><br>
+                <label for="provenienteAreaConflitoFundiarioUrbano">A família é proveniente de área de conflito
+                    fundiário urbano?</label>
+                <select id="provenienteAreaConflitoFundiarioUrbano" name="provenienteAreaConflitoFundiarioUrbano"
+                    required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - NÃO</option>
+                    <option value="2">2 - SIM</option>
+                    <option value="99">99 - SEM INF.</option>
+                </select><br><br>
+                <label for="especificar">Se sim, especificar:</label>
+                <input type="text" id="especificar" name="especificar" disabled><br><br>
+                <label for="sofreuOcorrenciaUltimos10Anos">A família sofreu alguma ocorrência nos últimos 10
+                    anos?</label>
+                <select id="sofreuOcorrenciaUltimos10Anos" name="sofreuOcorrenciaUltimos10Anos" required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - NÃO</option>
+                    <option value="2">2 - DESLIZAMENTO COM DESABRIGADOS PERMANENTES</option>
+                    <option value="3">3 - ENCHENTE COMO DESABRIGADOS PERMANENTE</option>
+                    <option value="4">4 - CHUVAS E VENTOS FORTES COM DESABRIGADOS PERMANENTES</option>
+                </select><br><br>
+                <label for="adequacaoImovelPretendido">Será necessário promover adequação no imóvel pretendido?</label>
+                <select id="adequacaoImovelPretendido" name="adequacaoImovelPretendido" required>
+                    <option value="">Selecione</option>
+                    <option value="1">1 - NÃO</option>
+                    <option value="2">2 - SIM</option>
+                    <option value="99">99 - SEM INF.</option>
+                </select><br><br>
+                <button type="button" class="save-section-button button btn-secondary">Salvar Seção</button>
+            </form>
+
+            <form id="form-section-10" class="form-section">
+                <h2>10. Animais de Estimação</h2>
+                <label for="possuiAnimaisEstimacao">Possui animais de estimação?</label>
+                <select id="possuiAnimaisEstimacao" name="possuiAnimaisEstimacao" required>
+                    <option value="">Selecione</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                </select><br><br>
+                <button type="button" class="save-section-button button btn-secondary">Salvar Seção</button>
+            </form>
+
+            <form id="form-section-11" class="form-section">
+                <h2>11. Mobilidade Urbana</h2>
+                <label for="principalMeioTransporte">Qual o principal meio de transporte?</label>
+                <select id="principalMeioTransporte" name="principalMeioTransporte" required>
+                    <option value="">Selecione</option>
+                    <option value="ONIBUS">ÔNIBUS</option>
+                    <option value="METRO">METRÔ</option>
+                    <option value="TREM">TREM</option>
+                    <option value="METRO_TREM">METRÔ/TREM</option>
+                    <option value="A_PE">A PÉ</option>
+                    <option value="CARRO">CARRO</option>
+                    <option value="MOTO">MOTO</option>
+                    <option value="OUTRO">OUTRO</option>
+                </select><br><br>
+
+                <label for="outraFormaTransporte">Qual outra forma de transporte?</label>
+                <input type="text" id="outraFormaTransporte" name="outraFormaTransporte" disabled><br><br>
+
+                <label for="regiaoTrabalho">Em que região você trabalha?</label>
+                <select id="regiaoTrabalho" name="regiaoTrabalho" required>
+                    <option value="">Selecione</option>
+                    <option value="LESTE">LESTE</option>
+                    <option value="OESTE">OESTE</option>
+                    <option value="SUL">SUL</option>
+                    <option value="NORTE">NORTE</option>
+                    <option value="ABC_PAULISTA">ABC PAULISTA</option>
+                </select><br><br>
+
+                <label for="possuiVeiculoProprioMoradia">Possui veículo próprio na moradia?</label>
+                <select id="possuiVeiculoProprioMoradia" name="possuiVeiculoProprioMoradia" required>
+                    <option value="">Selecione</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                </select><br><br>
+                <label for="moto">Moto:</label>
+                <input type="checkbox" id="moto" name="veiculos[]" value="Moto" disabled><br><br>
+                <label for="carro">Carro:</label>
+                <input type="checkbox" id="carro" name="veiculos[]" value="Carro" disabled><br><br>
+                <label for="caminhoneteSUV">Caminhonete/SUV:</label>
+                <input type="checkbox" id="caminhoneteSUV" name="veiculos[]" value="Caminhonete/SUV" disabled><br><br>
+                <label for="caminhao">Caminhão:</label>
+                <input type="checkbox" id="caminhao" name="veiculos[]" value="Caminhão" disabled><br><br>
+                <button type="button" class="save-section-button button btn-secondary">Salvar Seção</button>
+            </form>
+
+            <form id="form-section-12" class="form-section">
+                <h2>12. Sustentabilidade</h2>
+                <label for="separacaoMaterialReciclavel">Na sua residência é feita a separação do material
+                    reciclável?</label>
+                <select id="separacaoMaterialReciclavel" name="separacaoMaterialReciclavel" required>
+                    <option value="">Selecione</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                </select><br><br>
+                <label for="coletaMaterialReciclavel">Se sim, como é feito a coleta?</label>
+                <input type="text" id="coletaMaterialReciclavel" name="coletaMaterialReciclavel" disabled><br><br>
+                <button type="button" class="save-section-button button btn-secondary">Salvar Seção</button>
+            </form>
+
+            <form id="form-section-13" class="form-section">
+                <h2>13. Violência</h2>
+                <div id="violencia-campos"></div>
+                <button type="button" id="add-violencia" class="button btn-secondary">Adicionar Ocorrência de
+                    Violência</button>
+                <br>
+                <label for="leiMariaPenha">Alguém da família já foi atendido pela Lei Maria da Penha?</label>
+                <select id="leiMariaPenha" name="leiMariaPenha">
+                    <option value="">Selecione</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                </select><br><br>
+                <button type="button" class="save-section-button button btn-secondary">Salvar Seção</button>
+            </form>
+
+            <form id="form-section-14" class="form-section">
+                <h2>14. Documentação dos Beneficiários - Pessoa Física</h2>
+                <label for="declaracaoBeneficiario">Declaração do beneficiário (M029881):</label>
+                <input type="checkbox" id="declaracaoBeneficiario" name="documentos[]"
+                    value="declaracaoBeneficiario"><br><br>
+                <label for="documentoIdentificacao">Documento de identificação do(a) beneficiário(a) e
+                    cônjuge/companheiro(a):</label>
+                <input type="checkbox" id="documentoIdentificacao" name="documentos[]"
+                    value="documentoIdentificacao"><br><br>
+                <label for="cpf">CPF:</label>
+                <input type="checkbox" id="cpf" name="documentos[]" value="cpf"><br><br>
+                <label for="comprovanteEstadoCivil">Comprovante de estado civil:</label>
+                <input type="checkbox" id="comprovanteEstadoCivil" name="documentos[]"
+                    value="comprovanteEstadoCivil"><br><br>
+                <label for="pactoAntenupcial">Pacto antenupcial registrado no Cartório de Registro de Imóveis:</label>
+                <input type="checkbox" id="pactoAntenupcial" name="documentos[]" value="pactoAntenupcial"><br><br>
+                <label for="cndDividaAtivaUniao">CND Dívida Ativa da União:</label>
+                <input type="checkbox" id="cndDividaAtivaUniao" name="documentos[]" value="cndDividaAtivaUniao"><br><br>
+                <label for="autorizacaoDebitoConta">Autorização para débito em conta:</label>
+                <input type="checkbox" id="autorizacaoDebitoConta" name="documentos[]"
+                    value="autorizacaoDebitoConta"><br><br>
+                <label for="comprovantesRendimentos">Comprovantes de rendimentos:</label>
+                <input type="checkbox" id="comprovantesRendimentos" name="documentos[]"
+                    value="comprovantesRendimentos"><br><br>
+                <label for="procuracaoInstrumentoPublico">Procuração Por Instrumento Público:</label>
+                <input type="checkbox" id="procuracaoInstrumentoPublico" name="documentos[]"
+                    value="procuracaoInstrumentoPublico"><br><br>
+                <label for="declaracaoBeneficioINSS">Declaração do benefício emitida pelo INSS:</label>
+                <input type="checkbox" id="declaracaoBeneficioINSS" name="documentos[]"
+                    value="declaracaoBeneficioINSS"><br><br>
+                <button type="button" class="save-section-button button btn-secondary">Salvar Seção</button>
+            </form>
+
+            <form id="form-section-15" class="form-section">
+                <h2>15. Observações Finais</h2>
+                <label for="observacoes">Observações:</label>
+                <textarea id="observacoes" name="observacoes" rows="4" cols="50"></textarea><br><br>
+                <button type="button" class="save-section-button button btn-secondary">Salvar Seção</button>
+                <br>
+                <button type="button" class="finalizar-button button btn-primary" id="finalizar-cadastro">Finalizar e
+                    Voltar ao Dashboard</button>
+            </form>
+
+            <!-- CORREÇÃO CRÍTICA: Botões de navegação adicionados -->
+            <div class="form-navigation">
+                <button id="prev-button" class="button btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Anterior
+                </button>
+                <button id="next-button" class="button btn-secondary">
+                    Próximo <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="estatisticas-content" class="tab-content">
+            <h2>Estatísticas e Relatórios</h2>
+            <div class="reports-section">
+                <h3>Exportar Relatórios (Excel)</h3>
+                <!-- Botões de exportação -->
+                <button class="export-button button btn-secondary" data-target="visita">Dados de Visita</button>
+                <button class="export-button button btn-secondary" data-target="controle">Dados de Controle</button>
+                <button class="export-button button btn-secondary" data-target="responsaveis">Dados dos
+                    Responsáveis</button>
+                <button class="export-button button btn-secondary" data-target="familia">Composição Familiar</button>
+                <button class="export-button button btn-secondary" data-target="despesas">Despesas</button>
+                <button class="export-button button btn-secondary" data-target="lazer">Lazer e Cultura</button>
+                <button class="export-button button btn-secondary" data-target="participacao">Participação
+                    Comunitária</button>
+                <button class="export-button button btn-secondary" data-target="moradia">Dados de Moradia</button>
+                <button class="export-button button btn-secondary" data-target="animais">Animais de Estimação</button>
+                <button class="export-button button btn-secondary" data-target="mobilidade">Mobilidade Urbana</button>
+                <button class="export-button button btn-secondary"
+                    data-target="sustentabilidade">Sustentabilidade</button>
+                <button class="export-button button btn-secondary" data-target="violencia">Ocorrências de
+                    Violência</button>
+                <button class="export-button button btn-secondary" data-target="documentacao">Documentação</button>
+                <button class="export-button button btn-secondary" data-target="observacoes">Observações Finais</button>
+            </div>
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>Distribuição de Idades</h3>
+                    <canvas id="ageDistributionChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Situação de Renda</h3>
+                    <canvas id="incomeStatusChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Situação Ocupacional</h3>
+                    <canvas id="situacaoOcupacionalChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Distribuição por Gênero</h3>
+                    <canvas id="genderDistributionChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Tipo de Moradia</h3>
+                    <canvas id="moradiaTypeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        
+        </div>
+    </div>
+</body>
+
+
+</html>
